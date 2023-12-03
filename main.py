@@ -6,8 +6,8 @@ def select_all():
     return cur.fetchall()
 
 def add_values():
-    cur.execute("INSERT INTO users VALUES (1,'Ваня','Петров');")
-    cur.execute("INSERT INTO users VALUES (2,'Сергей','Сергеев');")
+    cur.execute("INSERT INTO users (name, surname) VALUES ('Ваня','Петров');")
+    cur.execute("INSERT INTO users (name, surname) VALUES ('Сергей','Сергеев');")
 
 def add_contact(name):
     phones = enterbox(f"Введите телефоны для {name} (через запятую):")
@@ -15,7 +15,6 @@ def add_contact(name):
     birthday = enterbox(f"Введите дату рождения для {name} (в формате DD.MM.YYYY):")
     company = enterbox(f"Введите компанию для {name}:")
 
-    # Извлекаем только цифры из строки с телефоном
     phone_numbers = [int(''.join(filter(str.isdigit, phone))) for phone in phones.split(',')]
 
     phonebook[name] = {'phones': phone_numbers if phone_numbers else [],
@@ -24,7 +23,30 @@ def add_contact(name):
                        'company': company if company else ''}
     msgbox(f"Контакт {name} успешно добавлен.", "Добавление контакта")
 
-# Инициализация phonebook
+def update_contact(name):
+    if name in phonebook:
+        phones = enterbox(f"Текущие телефоны для {name}: {', '.join(map(str, phonebook[name]['phones']))}\nВведите новые телефоны (через запятую):")
+        email = enterbox(f"Текущий email для {name}: {phonebook[name]['email']}\nВведите новый email:")
+        birthday = enterbox(f"Текущая дата рождения для {name}: {phonebook[name]['birthday']}\nВведите новую дату рождения (в формате DD.MM.YYYY):")
+        company = enterbox(f"Текущая компания для {name}: {phonebook[name]['company']}\nВведите новую компанию:")
+
+        phone_numbers = [int(''.join(filter(str.isdigit, phone))) for phone in phones.split(',')]
+
+        phonebook[name]['phones'] = phone_numbers if phone_numbers else []
+        phonebook[name]['email'] = email if email else ''
+        phonebook[name]['birthday'] = birthday if birthday else ''
+        phonebook[name]['company'] = company if company else ''
+        msgbox(f"Контакт {name} успешно обновлен.", "Обновление контакта")
+    else:
+        msgbox(f"Контакт {name} не найден.", "Ошибка")
+
+def delete_contact(name):
+    if name in phonebook:
+        del phonebook[name]
+        msgbox(f"Контакт {name} успешно удален.", "Удаление контакта")
+    else:
+        msgbox(f"Контакт {name} не найден.", "Ошибка")
+
 phonebook = {}
 
 conn = sl.connect("test_evening.db")
@@ -39,7 +61,9 @@ cur.execute("""
             );
             """)
 
-choice = choicebox("Выберите запрос", "Главная форма", 
+add_values()  # Добавляем пробные данные в базу данных
+
+choice = choicebox("Выберите запрос", "Главная форма",
                    ['Все записи', 'Добавить контакт', 'Просмотреть все контакты', 'Изменить контакт', 'Удалить контакт'])
 
 if choice == "Все записи":
@@ -53,6 +77,12 @@ elif choice == "Просмотреть все контакты":
     for name, contact_info in phonebook.items():
         all_contacts += f"Имя: {name}\nТелефоны: {', '.join(map(str, contact_info['phones']))}\nEmail: {contact_info['email']}\nДень рождения: {contact_info['birthday']}\nКомпания: {contact_info['company']}\n\n"
     msgbox(all_contacts, "Все контакты")
+elif choice == "Изменить контакт":
+    name_to_update = enterbox("Введите имя для изменения контакта:")
+    update_contact(name_to_update)
+elif choice == "Удалить контакт":
+    name_to_delete = enterbox("Введите имя для удаления контакта:")
+    delete_contact(name_to_delete)
 
 conn.commit()
 conn.close()
